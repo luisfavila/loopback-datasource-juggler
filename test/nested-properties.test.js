@@ -11,9 +11,9 @@ var should = require('./init.js');
 
 var db, Model;
 
-describe('basic-querying', function() {
+describe('nested properties', function() {
   before(function(done) {
-    var modelDef = {
+    const modelDef = {
       'nested': {
         'duration': Number,
         'happenedOn': Date,
@@ -25,45 +25,33 @@ describe('basic-querying', function() {
     db.automigrate(done);
   });
 
-  describe('ping', function() {
-    it('should be able to test connections', function(done) {
-      db.ping(function(err) {
-        should.not.exist(err);
-        done();
-      });
-    });
-  });
-
   describe('find', function() {
     before(function(done) {
       db = getSchema();
       Model.destroyAll(done);
     });
 
-    it('should query by nested Date: found', function(done) {
-      Model.create({
+    it('should query by nested Date: found', function() {
+      return Model.create({
         nested: {
           duration: 2,
           happenedOn: '2017-10-30T06:07:31.805Z',
         },
-      }, function(err, m) {
-        should.not.exist(err);
-        should.exist(m.id);
-        console.log(m);
-        Model.find({
+      })
+      .then(created => {
+        should.exist(created.id);
+        return Model.find({
           where: {
             'nested.happenedOn': {
               'gt': new Date('2017-10-20T06:07:31.805Z'),
             },
           },
-        }, function(err, m) {
-          should.not.exist(err);
-          should.exist(m);
-          console.log(m);
-          m.should.not.be.empty();
-          m[0].should.be.an.instanceOf(Model);
-          done();
         });
+      })
+      .then(found => {
+        should.exist(found);
+        found.should.not.be.empty();
+        found[0].should.be.an.instanceOf(Model);
       });
     });
   });
